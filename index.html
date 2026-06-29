@@ -1635,27 +1635,25 @@ function doSearch() {
 
   showDropdown(html);
 
-  // Expand ancestors + highlight matches on page
-  searchMatches.forEach(el => {
-    let cur = el;
-    while (cur) {
-      if (cur.classList.contains('section-block') && cur.classList.contains('collapsed'))
-        cur.classList.remove('collapsed');
-      if (cur.classList.contains('chapter-card') && cur.classList.contains('collapsed'))
-        cur.classList.remove('collapsed');
-      cur = cur.parentElement;
-    }
-    el.classList.add('highlight-match');
-  });
+  // Don't highlight all matches on page — user browses results in the dropdown
 }
 
 /* ===== 选中某个结果 ===== */
 function selectMatch(idx) {
   if (idx < 0 || idx >= searchMatches.length) return;
-  // Highlight
+  // Clear any previous highlight
   document.querySelectorAll('.highlight-current').forEach(el => el.classList.remove('highlight-current'));
+  // Expand ancestors of the target
+  let cur = searchMatches[idx];
+  while (cur) {
+    if (cur.classList.contains('section-block') && cur.classList.contains('collapsed'))
+      cur.classList.remove('collapsed');
+    if (cur.classList.contains('chapter-card') && cur.classList.contains('collapsed'))
+      cur.classList.remove('collapsed');
+    cur = cur.parentElement;
+  }
+  // Highlight just this one
   searchMatches[idx].classList.add('highlight-current');
-  searchMatches[idx].classList.remove('highlight-match');
   searchMatches[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
   closeDropdown();
   document.getElementById('searchInput').blur();
