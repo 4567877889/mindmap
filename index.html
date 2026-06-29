@@ -109,8 +109,25 @@ body {
 }
 .search-btn:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
 .search-count {
-  font-size: 11px; color: var(--text2); white-space: nowrap;
+  display: none; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text); white-space: nowrap;
 }
+.search-count.visible { display: flex; }
+.search-nav-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--bg3);
+  color: var(--text); cursor: pointer; font-size: 13px;
+  transition: all .2s; user-select: none;
+}
+.search-nav-btn:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); background: rgba(88,166,255,0.1); }
+.search-nav-btn:active { transform: scale(0.92); }
+#searchNavText { min-width: 48px; text-align: center; font-variant-numeric: tabular-nums; }
+.search-clear {
+  cursor: pointer; color: var(--text2); font-size: 14px; padding: 2px 4px;
+  border-radius: 4px; transition: all .2s;
+}
+.search-clear:hover { color: var(--accent-red); background: rgba(248,81,73,0.1); }
 
 /* ===== 主容器 ===== */
 .container { padding-top: 56px; position: relative; }
@@ -336,7 +353,9 @@ body {
 }
 
 /* ===== 搜索高亮 ===== */
-.highlight-active { background: rgba(210,153,34,0.3) !important; border-radius: 3px; }
+.highlight-match { background: rgba(210,153,34,0.18) !important; border-radius: 3px; outline: 1px solid rgba(210,153,34,0.15); }
+.highlight-current { background: rgba(210,153,34,0.45) !important; border-radius: 3px; outline: 2px solid var(--accent-yellow); box-shadow: 0 0 16px rgba(210,153,34,0.3); }
+.highlight-active { background: rgba(210,153,34,0.3) !important; border-radius: 3px; } /* legacy — keep for compat, replaced by highlight-match + highlight-current */
 
 /* ===== 响应式 ===== */
 @media (max-width: 768px) {
@@ -414,9 +433,14 @@ body {
   <a class="nav-btn ch5" href="#ch5">第五章</a>
   <a class="nav-btn ch6" href="#ch6">第六章</a>
   <div class="search-bar">
-    <input type="text" id="searchInput" placeholder="搜索知识点…" />
+    <input type="text" id="searchInput" placeholder="搜索知识点…" autocomplete="off" />
     <button class="search-btn" onclick="doSearch()">🔍</button>
-    <span class="search-count" id="searchCount"></span>
+    <span class="search-count" id="searchCount">
+      <span class="search-nav-btn" onclick="prevMatch(); event.stopPropagation()" title="上一个 (Shift+Enter)">◀</span>
+      <span id="searchNavText">0 / 0</span>
+      <span class="search-nav-btn" onclick="nextMatch(); event.stopPropagation()" title="下一个 (Enter)">▶</span>
+      <span class="search-clear" onclick="clearSearch(); event.stopPropagation()" title="清除 (Esc)">✕</span>
+    </span>
   </div>
 </nav>
 
@@ -1429,31 +1453,50 @@ body {
 <!-- 底部 -->
 <!-- ============================================================ -->
 <div class="keyboard-hint">
-  ⌨️ 键盘导航：<kbd>↑</kbd><kbd>↓</kbd> 滚轮浏览 · 点击标题可切换收起/展开各章节和知识点
+  ⌨️ 搜索：<kbd>Ctrl+F</kbd> 聚焦搜索框 · <kbd>Enter</kbd> 下一个匹配 · <kbd>Shift+Enter</kbd> 上一个匹配 · <kbd>Esc</kbd> 清除
 </div>
 
 </div></div></div><!-- end mindmap-area, container -->
 
 <!-- ===== 搜索脚本 ===== -->
 <script>
+/* ===== 搜索状态 ===== */
+let searchMatches = [];
+let currentMatchIdx = -1;
+
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchInput').focus();
+  clearHighlights();
+  document.getElementById('searchCount').classList.remove('visible');
+  document.getElementById('searchNavText').textContent = '0 / 0';
+  searchMatches = [];
+  currentMatchIdx = -1;
+}
+
+function clearHighlights() {
+  document.querySelectorAll('.highlight-match, .highlight-current, .highlight-active').forEach(el => {
+    el.classList.remove('highlight-match', 'highlight-current', 'highlight-active');
+  });
+}
+
 /* ===== 搜索功能 ===== */
 function doSearch() {
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
-  const countEl = document.getElementById('searchCount');
-  // 清除所有高亮
-  document.querySelectorAll('.highlight-active').forEach(el => {
-    el.classList.remove('highlight-active');
-  });
-  if (!q) { countEl.textContent = ''; return; }
+  if (!q) { clearSearch(); return; }
 
-  let count = 0;
+  clearHighlights();
+  searchMatches = [];
+  currentMatchIdx = -1;
+
+  // Walk all text nodes to find matches
   const walker = document.createTreeWalker(
     document.querySelector('.chapter-grid'),
     NodeFilter.SHOW_TEXT,
     null,
     false
   );
-  const matches = [];
+  const seen = new Set();
   while (walker.nextNode()) {
     const node = walker.currentNode;
     if (node.textContent.toLowerCase().includes(q)) {
@@ -1461,15 +1504,21 @@ function doSearch() {
       while (parent && !parent.classList.contains('knowledge-point') && !parent.classList.contains('section-title') && parent !== document.body) {
         parent = parent.parentElement;
       }
-      if (parent && !matches.includes(parent)) {
-        matches.push(parent);
+      if (parent && !seen.has(parent)) {
+        seen.add(parent);
+        searchMatches.push(parent);
       }
     }
   }
 
-  // 展开所有上层
-  matches.forEach(el => {
-    // 展开所有折叠的祖先
+  if (searchMatches.length === 0) {
+    document.getElementById('searchCount').classList.add('visible');
+    document.getElementById('searchNavText').textContent = '无结果';
+    return;
+  }
+
+  // Expand all ancestors of matches
+  searchMatches.forEach(el => {
     let cur = el;
     while (cur) {
       if (cur.classList.contains('section-block') && cur.classList.contains('collapsed')) {
@@ -1480,22 +1529,71 @@ function doSearch() {
       }
       cur = cur.parentElement;
     }
-    // 高亮
-    el.classList.add('highlight-active');
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    count++;
+    el.classList.add('highlight-match');
   });
 
-  countEl.textContent = count + ' 个结果';
-  if (count > 0) {
-    setTimeout(() => {
-      matches[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 200);
-  }
+  // Go to first match
+  document.getElementById('searchCount').classList.add('visible');
+  gotoMatch(0);
 }
 
-document.getElementById('searchInput').addEventListener('keyup', function(e) {
-  if (e.key === 'Enter') doSearch();
+function gotoMatch(idx) {
+  if (searchMatches.length === 0) return;
+  if (idx < 0) idx = searchMatches.length - 1;
+  if (idx >= searchMatches.length) idx = 0;
+
+  // Clear previous current
+  if (currentMatchIdx >= 0 && currentMatchIdx < searchMatches.length) {
+    searchMatches[currentMatchIdx].classList.remove('highlight-current');
+    searchMatches[currentMatchIdx].classList.add('highlight-match');
+  }
+
+  currentMatchIdx = idx;
+  searchMatches[idx].classList.remove('highlight-match');
+  searchMatches[idx].classList.add('highlight-current');
+
+  document.getElementById('searchNavText').textContent =
+    (currentMatchIdx + 1) + ' / ' + searchMatches.length;
+
+  searchMatches[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function nextMatch() {
+  if (searchMatches.length === 0) return;
+  gotoMatch(currentMatchIdx + 1);
+}
+
+function prevMatch() {
+  if (searchMatches.length === 0) return;
+  gotoMatch(currentMatchIdx - 1);
+}
+
+/* ===== 搜索框键盘事件 ===== */
+document.getElementById('searchInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    if (searchMatches.length === 0) {
+      doSearch();
+    } else {
+      nextMatch();
+    }
+  } else if (e.key === 'Enter' && e.shiftKey) {
+    e.preventDefault();
+    prevMatch();
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    clearSearch();
+  }
+});
+
+/* ===== 全局键盘事件 ===== */
+document.addEventListener('keydown', function(e) {
+  // Ctrl+F / Cmd+F — focus search
+  if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+    e.preventDefault();
+    document.getElementById('searchInput').focus();
+    document.getElementById('searchInput').select();
+  }
 });
 
 /* ===== 收展控制 ===== */
@@ -1516,33 +1614,12 @@ function toggleAll() {
     if (allCollapsed) c.classList.remove('collapsed');
     else c.classList.add('collapsed');
   });
-  // Also toggle sections
   const allSections = document.querySelectorAll('.section-block');
   allSections.forEach(s => {
     if (allCollapsed) s.classList.remove('collapsed');
     else s.classList.add('collapsed');
   });
 }
-
-/* ===== 键盘导航 ===== */
-document.addEventListener('keydown', function(e) {
-  // Ctrl+F search
-  if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-    e.preventDefault();
-    document.getElementById('searchInput').focus();
-  }
-  // Escape search
-  if (e.key === 'Escape') {
-    document.getElementById('searchInput').blur();
-    document.getElementById('searchCount').textContent = '';
-    document.querySelectorAll('.highlight-active').forEach(el => el.classList.remove('highlight-active'));
-  }
-});
-
-/* ===== 自动展开全部 ===== */
-document.addEventListener('DOMContentLoaded', function() {
-  // Start with all expanded
-});
 </script>
 
 </body>
