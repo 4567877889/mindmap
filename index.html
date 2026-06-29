@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>化工分离工程 - 交互式思维导图</title>
+<style>
+/* ===== 全局样式 ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0d1117;
+  --bg2: #161b22;
+  --bg3: #21262d;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text2: #8b949e;
+  --accent-cyan: #58a6ff;
+  --accent-green: #3fb950;
+  --accent-orange: #f0883e;
+  --accent-red: #f85149;
+  --accent-pink: #db61a2;
+  --accent-yellow: #d29922;
+  --accent-purple: #a371f7;
+  --accent-teal: #56d4dd;
+  --ch0: #58a6ff;
+  --ch1: #3fb950;
+  --ch2: #f0883e;
+  --ch3: #f85149;
+  --ch4: #db61a2;
+  --ch5: #d29922;
+  --ch6: #a371f7;
+  --node-radius: 8px;
+  --node-min-w: 180px;
+  --node-max-w: 380px;
+  --stroke: rgba(136,148,158,0.25);
+  --glow-cyan: 0 0 20px rgba(88,166,255,0.15);
+  --glow-green: 0 0 20px rgba(63,185,80,0.15);
+  --glow-orange: 0 0 20px rgba(240,136,62,0.15);
+  --glow-red: 0 0 20px rgba(248,81,73,0.15);
+  --glow-pink: 0 0 20px rgba(219,97,162,0.15);
+  --glow-yellow: 0 0 20px rgba(210,153,34,0.15);
+  --glow-purple: 0 0 20px rgba(163,113,247,0.15);
+}
+html { scroll-behavior: smooth; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ===== 顶部导航栏 ===== */
+.navbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 18px;
+  background: rgba(13,17,23,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.navbar .brand {
+  font-size: 15px; font-weight: 700;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-right: 12px; white-space: nowrap;
+}
+.navbar .sep { color: var(--text2); font-size: 13px; margin: 0 4px; }
+.nav-btn {
+  display: inline-block; padding: 4px 12px;
+  border-radius: 20px; font-size: 12px; font-weight: 600;
+  cursor: pointer; border: 1px solid var(--border);
+  background: var(--bg3); color: var(--text);
+  transition: all .2s; text-decoration: none; white-space: nowrap;
+}
+.nav-btn:hover { border-color: var(--accent-cyan); background: rgba(88,166,255,0.1); }
+.nav-btn.ch0 { border-color: var(--ch0); }
+.nav-btn.ch0:hover { background: rgba(88,166,255,0.15); }
+.nav-btn.ch1 { border-color: var(--ch1); }
+.nav-btn.ch1:hover { background: rgba(63,185,80,0.15); }
+.nav-btn.ch2 { border-color: var(--ch2); }
+.nav-btn.ch2:hover { background: rgba(240,136,62,0.15); }
+.nav-btn.ch3 { border-color: var(--ch3); }
+.nav-btn.ch3:hover { background: rgba(248,81,73,0.15); }
+.nav-btn.ch4 { border-color: var(--ch4); }
+.nav-btn.ch4:hover { background: rgba(219,97,162,0.15); }
+.nav-btn.ch5 { border-color: var(--ch5); }
+.nav-btn.ch5:hover { background: rgba(210,153,34,0.15); }
+.nav-btn.ch6 { border-color: var(--ch6); }
+.nav-btn.ch6:hover { background: rgba(163,113,247,0.15); }
+
+.search-bar {
+  display: flex; align-items: center; margin-left: auto; gap: 6px;
+}
+.search-bar input {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 20px; padding: 4px 14px; color: var(--text);
+  font-size: 13px; width: 180px; outline: none;
+  transition: border-color .2s, width .3s;
+}
+.search-bar input:focus { border-color: var(--accent-cyan); width: 240px; }
+.search-bar input::placeholder { color: var(--text2); }
+.search-btn {
+  background: none; border: 1px solid var(--border);
+  color: var(--text2); border-radius: 20px; padding: 4px 12px;
+  cursor: pointer; font-size: 12px; transition: all .2s;
+}
+.search-btn:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+.search-count {
+  font-size: 11px; color: var(--text2); white-space: nowrap;
+}
+
+/* ===== 主容器 ===== */
+.container { padding-top: 56px; position: relative; }
+.mindmap-area {
+  position: relative;
+  min-height: calc(100vh - 56px);
+  overflow: auto;
+  padding: 24px 40px;
+}
+
+/* ===== SVG 连线层 ===== */
+#connections-svg {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none; z-index: 1;
+}
+#connections-svg path {
+  fill: none;
+  stroke-width: 2;
+  opacity: 0.5;
+  transition: opacity .4s;
+}
+#connections-svg path.highlighted { opacity: 0.9; stroke-width: 3; }
+
+/* ===== 节点树容器 ===== */
+.node-tree { position: relative; z-index: 2; }
+
+/* ===== 根节点 ===== */
+.root-node {
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 16px 32px;
+  background: linear-gradient(135deg, #1a2332 0%, #0d1117 100%);
+  border: 2px solid var(--accent-cyan);
+  border-radius: 16px;
+  box-shadow: var(--glow-cyan);
+  cursor: pointer;
+  transition: all .3s;
+  margin: 0 auto 20px;
+  position: relative;
+}
+.root-node:hover {
+  box-shadow: 0 0 40px rgba(88,166,255,0.3);
+  transform: scale(1.02);
+}
+.root-node .icon { font-size: 32px; }
+.root-node .label {
+  font-size: 20px; font-weight: 800;
+  background: linear-gradient(135deg, #58a6ff, #3fb950);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.root-node .sub {
+  font-size: 12px; color: var(--text2);
+  -webkit-text-fill-color: var(--text2);
+}
+
+/* ===== 章节节点 ===== */
+.chapter-grid {
+  display: flex; flex-direction: column; gap: 20px;
+  max-width: 1400px; margin: 0 auto;
+}
+.chapter-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: all .3s;
+}
+.chapter-card:hover {
+  border-color: rgba(88,166,255,0.4);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+
+.chapter-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 20px;
+  cursor: pointer;
+  user-select: none;
+  transition: background .2s;
+}
+.chapter-header:hover { background: rgba(255,255,255,0.03); }
+.ch-header-left { display: flex; align-items: center; gap: 12px; flex: 1; }
+.ch-icon { font-size: 20px; }
+.ch-title { font-size: 16px; font-weight: 700; }
+.ch-tag {
+  font-size: 10px; padding: 2px 10px; border-radius: 12px;
+  font-weight: 600; letter-spacing: 0.5px;
+}
+.ch-toggle {
+  font-size: 13px; color: var(--text2);
+  transition: transform .3s;
+  margin-left: 8px;
+}
+.chapter-card.collapsed .ch-toggle { transform: rotate(-90deg); }
+.chapter-card.collapsed .chapter-body { display: none; }
+
+/* 章节颜色 */
+.chapter-card.ch0 { border-left: 4px solid var(--ch0); }
+.chapter-card.ch0 .ch-tag { background: rgba(88,166,255,0.15); color: var(--ch0); }
+.chapter-card.ch1 { border-left: 4px solid var(--ch1); }
+.chapter-card.ch1 .ch-tag { background: rgba(63,185,80,0.15); color: var(--ch1); }
+.chapter-card.ch2 { border-left: 4px solid var(--ch2); }
+.chapter-card.ch2 .ch-tag { background: rgba(240,136,62,0.15); color: var(--ch2); }
+.chapter-card.ch3 { border-left: 4px solid var(--ch3); }
+.chapter-card.ch3 .ch-tag { background: rgba(248,81,73,0.15); color: var(--ch3); }
+.chapter-card.ch4 { border-left: 4px solid var(--ch4); }
+.chapter-card.ch4 .ch-tag { background: rgba(219,97,162,0.15); color: var(--ch4); }
+.chapter-card.ch5 { border-left: 4px solid var(--ch5); }
+.chapter-card.ch5 .ch-tag { background: rgba(210,153,34,0.15); color: var(--ch5); }
+.chapter-card.ch6 { border-left: 4px solid var(--ch6); }
+.chapter-card.ch6 .ch-tag { background: rgba(163,113,247,0.15); color: var(--ch6); }
+
+/* ===== 章节内容体 ===== */
+.chapter-body { padding: 6px 20px 18px; }
+
+/* 二级标题 - 节 */
+.section-block { margin: 10px 0; }
+.section-title {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 14px; font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+  cursor: pointer;
+  user-select: none;
+  transition: all .2s;
+}
+.section-title:hover { background: rgba(255,255,255,0.07); }
+.section-toggle {
+  font-size: 11px; color: var(--text2);
+  transition: transform .2s;
+}
+.section-block.collapsed .section-toggle { transform: rotate(-90deg); }
+.section-block.collapsed .section-content { display: none; }
+
+/* 三级内容 - 知识点 */
+.section-content { padding: 6px 0 6px 18px; }
+.knowledge-point {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 6px 12px;
+  margin: 4px 0;
+  border-radius: 6px;
+  transition: background .2s;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.knowledge-point:hover { background: rgba(255,255,255,0.03); }
+.kp-badge {
+  flex-shrink: 0; font-size: 11px;
+  padding: 1px 8px; border-radius: 10px;
+  font-weight: 700; margin-top: 2px;
+}
+.kp-badge.core { background: var(--accent-red); color: #fff; }
+.kp-badge.important { background: var(--accent-orange); color: #fff; }
+.kp-badge.basic { background: rgba(88,166,255,0.2); color: var(--accent-cyan); }
+.kp-badge.diff { background: rgba(163,113,247,0.2); color: var(--accent-purple); }
+.kp-text { flex: 1; }
+.kp-text .highlight-search { background: rgba(210,153,34,0.4); border-radius: 2px; padding: 1px 2px; }
+.kp-formula {
+  display: inline-block;
+  background: rgba(88,166,255,0.08);
+  border: 1px solid rgba(88,166,255,0.2);
+  border-radius: 4px;
+  padding: 2px 10px;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.kp-formula.mathjax-done {
+  display: inline-block;
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+}
+  margin: 2px 0;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: var(--accent-cyan);
+}
+.kp-ref {
+  display: inline-block;
+  font-size: 11px;
+  background: rgba(139,148,158,0.15);
+  padding: 1px 7px;
+  border-radius: 4px;
+  color: var(--text2);
+  margin-left: 4px;
+}
+.kp-img {
+  display: inline-block;
+  font-size: 11px;
+  background: rgba(240,136,62,0.15);
+  padding: 1px 7px;
+  border-radius: 4px;
+  color: var(--accent-orange);
+  margin-left: 4px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.kp-img:hover { background: rgba(240,136,62,0.25); }
+
+.kp-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; }
+.kp-tag {
+  font-size: 10px; padding: 1px 8px; border-radius: 8px;
+  background: rgba(255,255,255,0.06); color: var(--text2);
+}
+.kp-tag.emphasis { background: rgba(243,143,31,0.15); color: var(--accent-yellow); }
+.kp-tag.difficult { background: rgba(163,113,247,0.15); color: var(--accent-purple); }
+.kp-tag.formula { background: rgba(88,166,255,0.15); color: var(--accent-cyan); }
+.kp-tag.flow { background: rgba(63,185,80,0.15); color: var(--accent-green); }
+
+.sub-list { padding-left: 16px; margin: 4px 0; }
+.sub-item {
+  font-size: 12.5px; padding: 3px 10px; margin: 2px 0;
+  border-left: 2px solid var(--border);
+  line-height: 1.5;
+}
+
+/* ===== 键盘导航指示 ===== */
+.keyboard-hint {
+  text-align: center; padding: 30px 20px 10px;
+  font-size: 12px; color: var(--text2);
+  opacity: 0.6;
+}
+
+/* ===== 搜索高亮 ===== */
+.highlight-active { background: rgba(210,153,34,0.3) !important; border-radius: 3px; }
+
+/* ===== 响应式 ===== */
+@media (max-width: 768px) {
+  .navbar { padding: 6px 12px; gap: 4px; }
+  .navbar .brand { font-size: 13px; }
+  .search-bar input { width: 120px; }
+  .search-bar input:focus { width: 160px; }
+  .mindmap-area { padding: 14px 12px; }
+  .chapter-header { padding: 10px 14px; }
+  .ch-title { font-size: 14px; }
+  .section-title { font-size: 13px; }
+  .knowledge-point { font-size: 12px; }
+}
+
+/* ===== 动画 ===== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.chapter-card { animation: fadeInUp 0.5s ease both; }
+.chapter-card:nth-child(1) { animation-delay: 0.05s; }
+.chapter-card:nth-child(2) { animation-delay: 0.10s; }
+.chapter-card:nth-child(3) { animation-delay: 0.15s; }
+.chapter-card:nth-child(4) { animation-delay: 0.20s; }
+.chapter-card:nth-child(5) { animation-delay: 0.25s; }
+.chapter-card:nth-child(6) { animation-delay: 0.30s; }
+.chapter-card:nth-child(7) { animation-delay: 0.35s; }
+
+.section-content { transition: all .25s ease; }
+</style>
+  <script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$','$'], ['\\(','\\)']],
+      displayMath: [['$$','$$'], ['\\[','\\]']],
+      processEscapes: true
+    },
+    options: {
+      ignoreHtmlClass: 'no-math',
+      processHtmlClass: 'kp-formula'
+    },
+    startup: {
+      ready() {
+        MathJax.startup.defaultReady();
+        MathJax.startup.promise.then(() => {
+          // After initial typeset, wrap .kp-formula in $$ and reprocess
+          document.querySelectorAll('.kp-formula').forEach(el => {
+            if (!el.classList.contains('mathjax-done')) {
+              el.classList.add('mathjax-done');
+              const text = el.innerHTML.trim();
+              if (text && text !== '...') {
+                el.innerHTML = '$$' + text + '$$';
+              }
+            }
+          });
+          MathJax.typesetPromise();
+        });
+      }
+    }
+  };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+
+<!-- ===== 导航栏 ===== -->
+<nav class="navbar" id="navbar">
+  <span class="brand">🧪 化工分离工程</span>
+  <span class="sep">·</span>
+  <a class="nav-btn ch0" href="#ch0">绪论</a>
+  <a class="nav-btn ch1" href="#ch1">第一章</a>
+  <a class="nav-btn ch2" href="#ch2">第二章</a>
+  <a class="nav-btn ch3" href="#ch3">第三章</a>
+  <a class="nav-btn ch4" href="#ch4">第四章</a>
+  <a class="nav-btn ch5" href="#ch5">第五章</a>
+  <a class="nav-btn ch6" href="#ch6">第六章</a>
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="搜索知识点…" />
+    <button class="search-btn" onclick="doSearch()">🔍</button>
+    <span class="search-count" id="searchCount"></span>
+  </div>
+</nav>
+
+<!-- ===== 主内容 ===== -->
+<div class="container">
+<div class="mindmap-area">
+
+<!-- 根节点 -->
+<div class="node-tree">
+  <div class="root-node" onclick="toggleAll()">
+    <span class="icon">🧪</span>
+    <div>
+      <div class="label">化工分离工程</div>
+      <div class="sub">Chemical Separation Engineering · 交互式思维导图</div>
+    </div>
+    <span style="font-size:13px;color:var(--text2);margin-left:10px;">点击收展全部 ▾</span>
+  </div>
+
+<div class="chapter-grid">
+
+<!-- ============================================================ -->
+<!-- 绪论 -->
+<!-- ============================================================ -->
+<div class="chapter-card ch0" id="ch0">
+  <div class="chapter-header" onclick="toggleChapter(this)">
+    <div class="ch-header-left">
+      <span class="ch-icon">📖</span>
+      <span class="ch-title">绪 论</span>
+      <span class="ch-tag">Introduction</span>
+    </div>
+    <span class="ch-toggle">▾</span>
+  </div>
+  <div class="chapter-body">
+
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>一、分离过程的基本概念</span>
+        <span class="kp-badge basic">基础概念</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge basic">基础</span>
+          <span class="kp-text">分离过程：将混合物分成组成互不相同的两种或几种产品的操作。需要分离剂（能量或物质）和分离设备。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge basic">基础</span>
+          <span class="kp-text">广义分离过程三要素：原料（混合物）、产品（组成不相同）、分离设备（装置）、分离剂（能量或物质）。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge basic">基础</span>
+          <span class="kp-text">分离工程：化学工程的分支，研究工业规模上混合物分离的技术科学问题，包括过程原理、方法选择、设备选型、过程模拟、设备设计、系统节能、集成优化等。</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>二、分离过程分类</span>
+        <span class="kp-badge core">⭐⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">传质分离分为：<strong>机械分离</strong>、<strong>平衡级分离</strong>（本课程重点）、<strong>速率控制分离</strong>（膜分离、分子蒸馏等）。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">平衡分离过程特点：①引入"相"概念，需产生或加入新相（分相）；②分离原理：平衡时各组分在相间分配不同；③受热力学平衡条件限制，常采用多级分离（塔器）。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">分离剂：<strong>能量分离剂（ESA）</strong>—传入/传出系统的热、输入输出功、减压；<strong>质量分离剂（MSA）</strong>—吸收剂、萃取剂、吸附剂等。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">典型的平衡级分离单元操作：闪蒸、精馏、萃取精馏、吸收蒸出、吸收、蒸出、共沸精馏、液液萃取、固体干燥、蒸发、结晶、浸取、泡沫分离、吸附分离、离子交换、色谱分离。</span>
+          <span class="kp-img" onclick="alert('见PPT 绪论-第10页 典型平衡级分离单元操作列表')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge basic">基础</span>
+          <span class="kp-text">速率分离过程特点：分离剂为强制力（压力梯度、温度梯度、电场、磁场）或选择性膜；分离原理为组分在均相中传递（扩散）速率差异。</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>三、化工分离过程的特点及发展方向</span>
+        <span class="kp-badge basic">了解</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge basic">了解</span>
+          <span class="kp-text">分离是化工过程必不可少的环节！分离操作占设备投资和能耗的很大比例。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge basic">了解</span>
+          <span class="kp-text">近代分离过程发展方向：①与过程系统工程结合，降低成本；②分离耦合技术、反应与分离耦合技术；③与过程强化、节能技术结合；④新型分离方法不断出现；⑤CO₂减排对分离技术提出更高要求。<span class="kp-ref">见PPT 绪论-第12页</span></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 第一章 单级平衡过程 -->
+<!-- ============================================================ -->
+<div class="chapter-card ch1" id="ch1">
+  <div class="chapter-header" onclick="toggleChapter(this)">
+    <div class="ch-header-left">
+      <span class="ch-icon">⚖️</span>
+      <span class="ch-title">第一章 单级平衡过程</span>
+      <span class="ch-tag">Single-stage Equilibrium</span>
+    </div>
+    <span class="ch-toggle">▾</span>
+  </div>
+  <div class="chapter-body">
+
+    <!-- 第一节 汽液相平衡 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第一节 汽液相平衡 (VLE)</span>
+        <span class="kp-badge core">⭐⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">相平衡反映过程进行的极限，是平衡级分离过程数学模型的重要组成部分。<span class="kp-ref">见PPT §1-1</span></span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge diff">难点</span>
+          <span class="kp-text">相平衡条件（判据）：<span class="kp-formula">T^L = T^V, p^L = p^V, μ_i^L = μ_i^V (i=1,2,…,c)</span>等价于逸度判据：<span class="kp-formula">f̂_i^L = f̂_i^V</span></span>
+          <span class="kp-img" onclick="alert('见图片 ch01-§1-1 相平衡条件推导')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">Gibbs相律：<span class="kp-formula">f = C − π + 2</span></span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">相平衡关系表示方法：相图（二元/三元体系）、相平衡常数K、分离因子α（相对挥发度）。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">Antoine关联方程（单组分饱和蒸汽压）：<span class="kp-formula">lg p^s = A − B/(C + T)</span></span>
+          <span class="kp-img" onclick="alert('见图片 ch01-§1 Antoine方程及参数表')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">相平衡常数K的计算方法：<span class="kp-formula">K_i = y_i / x_i</span></span>
+        </div>
+
+        <!-- 子：逸度系数/逸度系数模型 -->
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text"><strong>逸度系数/逸度系数模型（状态方程法）</strong>：用同一状态方程计算汽液两相逸度系数。<span class="kp-formula">K_i = φ̂_i^L / φ̂_i^V</span>适用于高压体系。</span>
+          <span class="kp-img" onclick="alert('见图片 ch01-状态方程法逸度系数计算')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">逸度系数计算式：<span class="kp-formula">ln φ̂_i = (1/RT)∫_V^∞ [(∂p/∂n_i)_{T,V,n_{j≠i}} − RT/V] dV − ln Z</span></span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">常用状态方程：SRK、PR（立方型三参数状态方程）。</span>
+        </div>
+
+        <!-- 子：逸度系数/活度系数模型 -->
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text"><strong>逸度系数/活度系数模型（活度系数法）</strong>：<span class="kp-formula">K_i = γ_i f_i^{∘L} / (φ̂_i p)</span>汽相逸度用逸度系数计算，液相逸度用活度系数计算。</span>
+          <span class="kp-img" onclick="alert('见图片 ch01-活度系数法模型结构')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">完整K模型：<span class="kp-formula">K_i = (γ_i p_i^s φ_i^s / (φ̂_i p)) · exp[V_i^L(p − p_i^s)/(RT)]</span></span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">常用的活度系数模型：<strong>Wilson</strong>（不能用于液液平衡）、<strong>NRTL</strong>（含水物系精度好）、<strong>UNIQUAC</strong>（分子大小差别大的物系）、<strong>UNIFAC</strong>（估算型）。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">相对挥发度（分离因子）<span class="kp-formula">α_{ij} = K_i / K_j</span>，α=1时无法用普通精馏分离。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">简化K模型：<span class="kp-formula">K_i = p_i^s / p</span>（理想体系）；<span class="kp-formula">K_i = γ_i p_i^s / p</span>（汽相理想、液相非理想）。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">K计算方法选择：中低压非理想物系→活度系数法；非极性组分（烃类）→SRK/PR方程；高压极性组分→尚无可靠方法。ASPEN PLUS推荐RK组合模型（RK-Wilson, RK-NRTL等）。</span>
+          <span class="kp-img" onclick="alert('见图片 ch01-计算方法选择决策图')">📄见PPT</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第二节 泡露点计算 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第二节 多组分物系泡露点计算</span>
+        <span class="kp-badge core">⭐⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">泡点方程：<span class="kp-formula">∑K_i x_i = 1</span>（已知p, x，求T, y）；露点方程：<span class="kp-formula">∑y_i / K_i = 1</span>（已知p, y，求T, x）。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">简化K模型泡点温度计算（Newton法）：<span class="kp-formula">F(T) = ∑K_i x_i − 1.0</span>，<span class="kp-formula">T^{(k+1)} = T^{(k)} − F(T)/F'(T)</span></span>
+          <span class="kp-img" onclick="alert('见图片 ch01-Newton法计算框图(Bubble T)')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge diff">难点</span>
+          <span class="kp-text">严格K模型的双层循环迭代法：外循环迭代温度T；内循环迭代汽相组成y_i。<span class="kp-img" onclick="alert('见图片 ch01-严格K模型双层循环框图')">📄见PPT</span></span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">泡点压力计算：<span class="kp-formula">p_{泡} = ∑p_i^s x_i</span>（理想）；<span class="kp-formula">p_{泡} = ∑γ_i p_i^s x_i</span>（液相非理想）。压力迭代：<span class="kp-formula">p^{(k+1)} = p^{(k)} ∑K_i x_i</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第三节 闪蒸计算 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第三节 闪蒸计算</span>
+        <span class="kp-badge core">⭐⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">闪蒸：连续、稳态、基于单级汽液平衡的单元操作，常用于混合物粗分离和热量回收。类型：部分汽化、部分冷凝、绝热闪蒸。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">MESH方程组：M-物料平衡 <span class="kp-formula">Fz_i = Vy_i + Lx_i</span>；E-相平衡 <span class="kp-formula">y_i = K_i x_i</span>；S-归一 <span class="kp-formula">∑x_i = 1, ∑y_i = 1</span>；H-热量平衡 <span class="kp-formula">FH_F + Q = VH_V + LH_L</span></span>
+          <span class="kp-img" onclick="alert('见图片 ch01-闪蒸过程示意图')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text"><strong>Rachford-Rice (R-R) 闪蒸方程</strong>：<span class="kp-formula">∑(K_i − 1)z_i / [(K_i − 1)e + 1] = 0</span>，其中 <span class="kp-formula">e = V/F</span></span>
+          <span class="kp-img" onclick="alert('见图片 ch01-RR闪蒸方程推导')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">等温闪蒸：已知T,p，用Newton法求解R-R方程求e（汽化分率）。部分汽化/部分冷凝：指定e或T，迭代另一个变量。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge diff">难点</span>
+          <span class="kp-text">绝热闪蒸：两变量（T和e）同时收敛，用Newton法求解非线性方程组。需计算Jacobian矩阵。<span class="kp-formula">F₁(e,T) = ∑(K_i−1)z_i/[(K_i−1)e+1] = 0</span>，<span class="kp-formula">F₂(e,T) = eH_V + (1−e)H_L − H_F = 0</span></span>
+          <span class="kp-img" onclick="alert('见图片 ch01-绝热闪蒸Newton法流程图')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">闪蒸自由度分析：压力指定后，只能指定一个设计变量。e=V/F为汽化分率。</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 第二章 多组分精馏 -->
+<!-- ============================================================ -->
+<div class="chapter-card ch2" id="ch2">
+  <div class="chapter-header" onclick="toggleChapter(this)">
+    <div class="ch-header-left">
+      <span class="ch-icon">🏗️</span>
+      <span class="ch-title">第二章 多组分精馏</span>
+      <span class="ch-tag">Multicomponent Distillation</span>
+    </div>
+    <span class="ch-toggle">▾</span>
+  </div>
+  <div class="chapter-body">
+
+    <!-- 第一节 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第一节 自由度分析与设计变量选择</span>
+        <span class="kp-badge core">⭐⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">自由度：<span class="kp-formula">N_f = N_V − N_E</span>（变量数−方程数）。设计变量数：<span class="kp-formula">N_D = N_V − N_E</span></span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">过程变量包括：强度变量（T, p, x, y）、广度变量（Q, F, V, L）、设备参数（N板数, N_F进料位置）。中间变量（如K_i, R）不参与自由度分析。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">设计变量 = 限定性设计变量（N_S）+ 非限定性设计变量（N_a）。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">一个流股的变量数 = c + 2（p, T, F, x_i）。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">郭氏法（郭慕孙, 1956）— 系统进行化工单元及装置自由度分析的方法。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">单元自由度分析示例（再沸器）：流股变量数3(c+2)，外界换热1变量→N_V=3c+7；约束关系（MB 2个+EB 1个+E c个+S 1个）→N_E=2c+3；N_D=c+4。</span>
+          <span class="kp-img" onclick="alert('见图片 ch02-再沸器自由度分析')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">装置自由度：<span class="kp-formula">N_D^u = ∑N_D^e + N_r − N_{uc}</span>。N_r为流股重复使用的约束增加数。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">简单精馏塔设计变量指定方案（常用）：进料、每级压力、全凝器压力、回流分配器压力、总理论级数、进料位置、回流温度、馏出液流量、回流比。<span class="kp-formula">N_D = 5</span></span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge diff">难点</span>
+          <span class="kp-text">复杂塔：每增加1股进料→增加c+2个流股变量+1个进料位置变量；每增加1股侧线→增加1个流量+1个采出位置变量。复杂度随自由度增加呈指数增长。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第二节 简捷设计 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第二节 多组分精馏塔的简捷设计 (F-U-G)</span>
+        <span class="kp-badge core">⭐⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">Fenske-Underwood-Gilliland（F-U-G）近似设计法称为简捷法（shortcut method）。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text"><strong>关键组分</strong>：LK轻关键组分（控制塔顶产品），HK重关键组分（控制塔底产品）。分离要求指定LK和HK的回收率。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">非关键组分：LNK（轻非关键）、HNK（重非关键）、MC（中间组分）。分配组分与非分配组分。清晰分割与非清晰分割。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text"><strong>Fenske方程</strong>（全回流、最小理论塔板数）：<span class="kp-formula">N_{min} = lg[(x_{LK}/x_{HK})_D(x_{HK}/x_{LK})_B] / lg(α_{LK,HK})_{avg}</span></span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text"><strong>Underwood方程</strong>（最小回流比）：<span class="kp-formula">∑(α_i x_{i,F}) / (α_i − θ) = 1 − q</span>（求θ），<span class="kp-formula">R_{min} + 1 = ∑(α_i x_{i,D}) / (α_i − θ)</span></span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">适宜操作回流比：<span class="kp-formula">R = (1.1 ~ 2.0) R_{min}</span>。优化：总费用（操作费+设备费）最小处。</span>
+          <span class="kp-img" onclick="alert('见图片 ch02-回流比优化曲线')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text"><strong>Gilliland关联式</strong>：由R, R_{min}, N, N_{min} 的关系图或拟合式确定理论塔板数N。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text"><strong>Kirkbride关联式</strong>：确定进料位置（原则：热力学第二定律，进料位置应使进料级处汽液相组成与进料组成最接近）。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">塔压确定原则：①公用工程条件；②混合物热力学性质（临界、分解、结焦等）。塔类型：常压、加压、减压。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">冷凝器类型：全凝器、分凝器、混合冷凝器。再沸器类型：卧式再沸器（Kettle-type）、虹吸式再沸器。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">简捷法计算步骤：规定进料→规定关键组分回收率→估计非关键组分分配→物料衡算→确定塔压→计算T_D, T_B, α_m→计算N_{min}（Fenske）→计算非关键组分分配→计算R_{min}（Underwood）→R=(1.2~2)R_{min}→Gilliland求N→计算进料位置→Q_C, Q_R计算。</span>
+          <span class="kp-img" onclick="alert('见图片 ch02-简捷设计计算流程图')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">简捷设计举例：五组分轻烃混合物（丙烷/异丁烷/正丁烷/异戊烷/正戊烷），LK=异丁烷（回收率98%），HK=正丁烷（回收率98%）。</span>
+          <span class="kp-img" onclick="alert('见图片 ch02-简捷设计算例')">📄见PPT</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第三节 参数分布 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第三节 精馏塔内参数分布与分析</span>
+        <span class="kp-badge important">⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">参数分布：汽液相中组分浓度分布、温度分布、汽液相流量分布。</span>
+          <span class="kp-img" onclick="alert('见图片 ch02-参数分布图(浓度/温度/流量)')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">多组分精馏中关键组分浓度有极大值，非关键组分可能存在恒浓区域。温度由组成决定，沿塔向下重组分增多，温度升高。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">汽液相流量由热量决定（潜热控制），恒摩尔流假设对大多数物系适用。温度分布反映组成，流量分布反映热量变化。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第四节 严格模拟 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第四节 多组分精馏的严格模拟</span>
+        <span class="kp-badge core">⭐⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">平衡级概念：将精馏塔视为由若干平衡级（理论塔板）构成。两个假设：平衡级、全混级。</span>
+          <span class="kp-img" onclick="alert('见图片 ch02-平衡级模型示意图')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">通用精馏模型塔——考虑各种实际塔形式，MESH方程组通用：M-物料平衡、E-相平衡、S-求和、H-热量平衡。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">MESH方程：<span class="kp-formula">F_j z_{ij} + L_{j-1} x_{i,j-1} + V_{j+1} y_{i,j+1} = (V_j+G_j) y_{ij} + (L_j+U_j) x_{ij}</span><br>
+            <span class="kp-formula">y_{ij} = K_{ij} x_{ij}</span><br>
+            <span class="kp-formula">∑x_{ij}=1, ∑y_{ij}=1</span><br>
+            <span class="kp-formula">F_j H_{F_j} + L_{j-1} h_{j-1} + V_{j+1} H_{j+1} = (V_j+G_j) H_j + (L_j+U_j) h_j + Q_j</span></span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge diff">难点</span>
+          <span class="kp-text"><strong>BP法（泡点法）</strong>：方程解耦法。将MESH方程组解离为ME方程（工作方程）+ S方程和H方程（收敛检验）。迭代变量：T_j和V_j。内层T-迭代（泡点），外层V-迭代（热量平衡）。</span>
+          <span class="kp-img" onclick="alert('见图片 ch02-BP法流程图')">📄见PPT</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 第三章 特殊精馏 -->
+<!-- ============================================================ -->
+<div class="chapter-card ch3" id="ch3">
+  <div class="chapter-header" onclick="toggleChapter(this)">
+    <div class="ch-header-left">
+      <span class="ch-icon">🔬</span>
+      <span class="ch-title">第三章 特殊精馏</span>
+      <span class="ch-tag">Special Distillation</span>
+    </div>
+    <span class="ch-toggle">▾</span>
+  </div>
+  <div class="chapter-body">
+
+    <!-- 概述 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第一节 概述</span>
+        <span class="kp-badge core">⭐⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">特殊精馏概念：在物系中加入第三组分（物质分离剂），改变被分离组分间的相对挥发度或热力学平衡关系，用精馏方法实现混合物分离。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">采用特殊精馏的情况：①普通精馏不经济（α<1.05, 沸点差<3℃, 塔板>200, 回流比>15）；②普通精馏不可能（共沸体系）。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">主要特殊精馏方法：萃取精馏、加盐精馏、变压精馏、均相/非均相共沸精馏、反应精馏、膜精馏、吸附精馏。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">特殊精馏的复杂性：①物质分离剂选择（非唯一）；②高度非理想体系相平衡模型；③分离剂回收和再循环（多塔+物流循环）。</span>
+          <span class="kp-img" onclick="alert('见图片 ch03-乙醇脱水共沸精馏流程')">📄见PPT</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 共沸精馏 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第二节 共沸精馏</span>
+        <span class="kp-badge core">⭐⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">共沸现象：汽液平衡时组分在液相和汽相中的组成相等。共沸点处 α=1, T_{bubble}=T_{dew}。共沸物具有压力依赖性。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge diff">难点</span>
+          <span class="kp-text">共沸物的形成：与理想溶液的偏差导致。最大正偏差→最低共沸物；最大负偏差→最高共沸物。</span>
+          <span class="kp-img" onclick="alert('见图片 ch03-正偏差与负偏差相图')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge diff">难点</span>
+          <span class="kp-text">共沸组成计算：同泡点计算。联立求解：<span class="kp-formula">p = γ₁ x₁ p₁^s + γ₂ x₂ p₂^s</span>，<span class="kp-formula">x₁ + x₂ = 1</span>，<span class="kp-formula">γ_i = f_i(T, x_i)</span></span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text"><strong>变压精馏（PSD）</strong>：利用不同压力下共沸组成的变化，通过两塔流程（高压塔+低压塔）绕过共沸点限制。两塔间有共沸物循环。</span>
+          <span class="kp-img" onclick="alert('见图片 ch03-变压精馏流程及T-x-y图')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">循环量D₂计算：<span class="kp-formula">D₂ = F(z₁−x₁,W₁)(x₁,W₂−x₁,D₁) / [(x₁,W₂−x₁,D₁)(x₁,D₂−x₁,D₁)]</span>。循环量是系统技术经济指标，影响能耗和操作费用。两塔间需进行热集成。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text"><strong>二元非均相共沸精馏</strong>：利用分相器（decanter）使塔顶冷凝的共沸物自发分相，绕过共沸点限制。</span>
+          <span class="kp-img" onclick="alert('见图片 ch03-非均相共沸物T-x-x-y相图')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge diff">难点</span>
+          <span class="kp-text">非均相共沸精馏流程设计步骤：①绘制T-x-x-y相图；②确定分离区域和分相操作温度；③确定分相后两液相状态点；④确定不同精馏区域分离产品；⑤画出分离流程图。</span>
+          <span class="kp-img" onclick="alert('见图片 ch03-非均相共沸精馏流程')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text"><strong>三元共沸精馏</strong>：加入共沸剂（第三组分），与原组分形成新共沸物。关键工具：三角形坐标图、残余曲线图（RCM）。</span>
+          <span class="kp-img" onclick="alert('见图片 ch03-三角相图及残余曲线')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge diff">难点</span>
+          <span class="kp-text">残余曲线图（RCM）：表达三组分混合物简单蒸馏过程中釜液组成变化的曲线。特殊点：不稳定节点、稳定节点、鞍形节点。精馏边界不可跨越。</span>
+          <span class="kp-img" onclick="alert('见图片 ch03-残余曲线图完整示意图')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">共沸剂选择原则：对于二元最低共沸物→选择低沸点组分或能形成新最低共沸物的组分；对于最高共沸物→选择高沸点组分。残余曲线必须连接期望产品。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">举例（丙酮为共沸剂分离环己烷-苯）：先混合后分离，将困难转嫁到环己烷-丙酮共沸物，用水萃取分离。</span>
+          <span class="kp-img" onclick="alert('见图片 ch03-环己烷-苯-丙酮三角相图')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">举例（苯为共沸剂制无水乙醇）：利用三元非均相共沸物+分相器。流程：共沸精馏塔+苯回收塔+乙醇回收塔。</span>
+          <span class="kp-img" onclick="alert('见图片 ch03-苯共沸精馏无水乙醇流程')">📄见PPT</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 萃取精馏 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第三节 萃取精馏</span>
+        <span class="kp-badge core">⭐⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">萃取精馏：加入高沸点萃取剂S，选择性改变A、B组分的蒸汽压，增大相对挥发度。<span class="kp-formula">α₁₂ = (γ₁ p₁^s) / (γ₂ p₂^s)</span></span>
+          <span class="kp-img" onclick="alert('见图片 ch03-萃取精馏流程图')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">萃取剂作用：①改变原有组分间相互作用；②稀释作用。关键：活度系数比γ₁/γ₂的变化。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">Ewell分类选择法：按极性排序：烃→醚→醛→酮→酯→醇→二醇→水。选择极性更类似于重组分的物质作萃取剂，减少重组分挥发度。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">萃取精馏特点：两股进料、三个塔段；大量高沸点萃取剂（x_S>0.6）；显热占较大比例；分离调节方法为萃取剂用量+温度。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">萃取精馏 vs 共沸精馏比较：共沸剂数目不如萃取剂多；共沸精馏能耗通常更高；共沸精馏操作条件更苛刻；共沸可用于间歇操作；共沸操作温度较低，适合热敏物料。</span>
+          <span class="kp-img" onclick="alert('见图片 ch03-乙醇脱水共沸vs萃取精馏对比')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge basic">了解</span>
+          <span class="kp-text">加盐精馏：加入无机盐改变相对挥发度。<strong>加盐萃取精馏</strong>：有机萃取剂+无机盐结合，效果更显著。举例：叔丁醇+水体系加EG+无机盐。</span>
+          <span class="kp-img" onclick="alert('见图片 ch03-加盐萃取精馏流程')">📄见PPT</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 反应精馏 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第四节 反应精馏</span>
+        <span class="kp-badge important">⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">反应精馏（RD）：将反应和精馏合二为一。若使用固体催化剂→催化精馏（CD）。代表性应用：MTBE、乙酸甲酯。</span>
+          <span class="kp-img" onclick="alert('见图片 ch03-反应精馏塔结构图')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">反应精馏优点：克服化学平衡限制；提高选择性；利用反应热；破坏共沸物；简化流程、节省投资。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge diff">难点</span>
+          <span class="kp-text">反应精馏数学模型（MESHR方程组）：在MESH基础上增加化学反应项R_j <span class="kp-formula">F_j z_{ij} + L_{j-1} x_{i,j-1} + V_{j+1} y_{i,j+1} − (L_j+S_j)x_{ij} − (V_j+G_j)y_{ij} + ν_i R_j = 0</span></span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">关键设计参数：反应体积（持液量）、停留时间、催化剂放置方式。与普通精馏不同的参数设定：操作压力、回流比、塔板结构、进料位置。</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 第四章 多组分吸收 -->
+<!-- ============================================================ -->
+<div class="chapter-card ch4" id="ch4">
+  <div class="chapter-header" onclick="toggleChapter(this)">
+    <div class="ch-header-left">
+      <span class="ch-icon">💨</span>
+      <span class="ch-title">第四章 多组分吸收和蒸出过程</span>
+      <span class="ch-tag">Absorption & Stripping</span>
+    </div>
+    <span class="ch-toggle">▾</span>
+  </div>
+  <div class="chapter-body">
+
+    <!-- 概述 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第一节 概述</span>
+        <span class="kp-badge core">⭐⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">吸收：气体混合物+液体吸收剂→基于溶解度差异→实现分离。蒸出（解吸）：吸收的逆过程。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">物理吸收 vs 化学吸收；单组分 vs 多组分吸收；等温 vs 非等温吸收；高浓度 vs 低浓度吸收。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">吸收过程设计需考虑因素：气量、组成、温度压力；回收率要求；吸收剂选择；操作压力温度；最小吸收剂用量；平衡级数；热效应；塔径塔高。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 流程 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第二节 吸收和蒸出过程流程</span>
+        <span class="kp-badge important">⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">流程类型：单一吸收塔、串联吸收塔、吸收剂回收再循环、吸收蒸出塔（如烯烃厂脱甲烷塔）。</span>
+          <span class="kp-img" onclick="alert('见图片 ch04-各种吸收流程示意图')">📄见PPT</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 气液相平衡 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第三节 吸收过程的气液相平衡</span>
+        <span class="kp-badge core">⭐⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">汽相逸度计算：状态方程法；液相逸度：可凝性组分用活度系数法（Lewis-Randall规则），非凝性组分（超临界组分）用<span class="kp-formula">K_i = H_{i,j} / p</span>（亨利定律）。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">吸收中关键组分只有一个（精馏有两个：LK和HK）。精馏为双向传质（恒摩尔流假设），吸收为单向传质（流率单调变化）。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">吸收热效应：溶解热使液体温度升高，推动力减小。措施：①冷却（塔内设冷却器）；②提高液气比；③冷却入塔气体并减湿。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 吸收塔内分布 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第四节 吸收塔内参数分布</span>
+        <span class="kp-badge important">⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">流量：单向传质→气相和液相总流率均沿塔向下增大（与精馏不同）。温度：显著热效应→沿塔向下升高，很多情况出现温度极大值。</span>
+          <span class="kp-img" onclick="alert('见图片 ch04-吸收塔内流量/温度分布图')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">组成分布：关键组分全塔范围有吸收；轻组分靠近塔顶被吸收；重组分主要在塔底附近吸收。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 严格计算 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第五节 吸收过程的严格计算</span>
+        <span class="kp-badge diff">⭐⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">MESH方程组与精馏类似，但K模型不同：可凝性→<span class="kp-formula">K_i = γ_i p_i^s φ_i^s / (φ̂_i p) · exp[V_i^L(p−p_i^s)/(RT)]</span>；非凝性→<span class="kp-formula">K_i = H_{i,j}/p</span></span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge diff">难点</span>
+          <span class="kp-text"><strong>SR法（流量加和法）</strong>与BP法的不同：迭代变量和收敛检验函数匹配方案相反。内层/外层循环迭代变量不同。原因：吸收中流量变化是主因，温度由热量平衡确定（非泡点）。</span>
+          <span class="kp-img" onclick="alert('见图片 ch04-BP法与SR法对比')">📄见PPT</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 第五章 节能优化与综合 -->
+<!-- ============================================================ -->
+<div class="chapter-card ch5" id="ch5">
+  <div class="chapter-header" onclick="toggleChapter(this)">
+    <div class="ch-header-left">
+      <span class="ch-icon">⚡</span>
+      <span class="ch-title">第五章 分离过程的节能、优化及综合</span>
+      <span class="ch-tag">Energy & Optimization</span>
+    </div>
+    <span class="ch-toggle">▾</span>
+  </div>
+  <div class="chapter-body">
+
+    <!-- 热力学分析 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第一节 分离过程用能特性及热力学分析</span>
+        <span class="kp-badge core">⭐⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text">节能一般原则（第二定律）：高能高用，低能低用，温位合理，阶梯利用。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">热力学第一定律分析（数量）：再沸器加入的热量Q_R几乎全部被塔顶冷凝器取走。节能关键：回收利用塔顶蒸汽冷凝潜热；产品和进料显热利用；保温绝热。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">热力学第二定律分析（品位）：精馏过程不可逆，再沸器高品位能量→冷却水低品位带走（能量贬质）。节能关键：降低不可逆性、减少高品位能量消耗。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">有效能损失原因：①流体流动（压力损失）；②传质（浓度差混合）；③传热（温度差混合）；④外部（换热器排放）。</span>
+          <span class="kp-img" onclick="alert('见图片 ch05-能量驱动精馏示意图')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge basic">了解</span>
+          <span class="kp-text">不可逆性评价：熵产生、有效能（Exergy）、热力学效率。<span class="kp-formula">∑E_{xi,in} = ∑E_{xi,out} + E_L</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 操作参数优化 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第二节 精馏过程操作参数的优化</span>
+        <span class="kp-badge important">⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">操作压力优化：影响冷凝/加热温度、相对挥发度、塔造价。调节压力是实现热集成的有效手段。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">回流比优化：R=(1.1~1.2)R_{min}，总费用（操作费+设备费）最小处为最适回流比。</span>
+          <span class="kp-img" onclick="alert('见图片 ch05-回流比-费用曲线')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">进料热状态优化：<span class="kp-formula">L' = L + qF</span>，<span class="kp-formula">V = V' + (1−q)F</span>。进料热状况直接影响塔运行负荷和稳定性。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 节能技术 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第三节 精馏过程节能技术</span>
+        <span class="kp-badge core">⭐⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <!-- 热泵 -->
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text"><strong>热泵精馏</strong>：通过热泵（输入电功），将塔顶蒸汽低温热源提高温位作为再沸器热源。三种方式：①闭式（外部工质）；②开式A型（塔顶直接压缩）；③开式B型（塔底闪蒸）。</span>
+          <span class="kp-img" onclick="alert('见图片 ch05-三种热泵精馏方式')">📄见PPT</span>
+        </div>
+        <!-- 多效精馏 -->
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text"><strong>多效精馏</strong>：将总分离任务"切割"为多个，分配到多塔中进行，利用高压塔顶汽相冷凝潜热加热低压塔底。双效精馏节能率约40%。</span>
+          <span class="kp-img" onclick="alert('见图片 ch05-双效精馏流程图(并流/逆流/平流)')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">节能效果与效数：2效~40%，3效~55%，4效~65%，5效~70%。经济效数受设备投资限制。</span>
+          <span class="kp-img" onclick="alert('见图片 ch05-多效精馏节能曲线')">📄见PPT</span>
+        </div>
+        <!-- 中间换热器 -->
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text"><strong>增设中间换热器</strong>：精馏段设中间冷凝器（低质冷量代替高品位制冷剂），提馏段设中间再沸器（低质热量代替高品位加热介质）。减少不可逆性。</span>
+        </div>
+        <!-- HIDiC -->
+        <div class="knowledge-point">
+          <span class="kp-badge diff">难点</span>
+          <span class="kp-text"><strong>内部热集成精馏（HIDiC）</strong>：从精馏段取出热供提馏段使用（精馏段温度为T_精，提馏段温度为T_提，T_精<T_提→需用热泵技术）。<span class="kp-formula">Q = K·S·ΔT</span></span>
+          <span class="kp-img" onclick="alert('见图片 ch05-HIDiC结构图')">📄见PPT</span>
+        </div>
+        <!-- 热耦合 -->
+        <div class="knowledge-point">
+          <span class="kp-badge diff">难点</span>
+          <span class="kp-text"><strong>热耦合精馏</strong>：三组分的分离。直接顺序（AB|C→A|B）和间接顺序（A|BC→B|C）。预分馏塔+主塔消除"再混合"效应。</span>
+          <span class="kp-img" onclick="alert('见图片 ch05-预分馏塔+主塔流程')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge diff">难点</span>
+          <span class="kp-text"><strong>隔壁精馏塔（DWC）</strong>：将FC塔（完全热耦合）合并于同一塔壳，中间加隔板。比简单塔序列节能30%以上。关键技术：隔板两侧汽体流量精确分配和控制。</span>
+          <span class="kp-img" onclick="alert('见图片 ch05-隔壁塔(DWC)结构')">📄见PPT</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分离过程综合 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第四节 分离过程的综合</span>
+        <span class="kp-badge important">⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">分离序列综合：给定待分离混合物和分离要求，以总费用最小为目标，设计产品分离顺序（流程）。属于MINLP（混合整数非线性规划）问题。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">经验规则法：①易分离组分先分离；②按轻到重顺序逐一分离（顺序分离）；③含量大的先分离；④塔顶塔底近等摩尔分配；⑤回收率要求高的最后分离。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">五组分烃类分离序列合成举例（C₃, iC₄, nC₄, iC₅, nC₅）：最易分离（C₃）先分离→次易分离近等摩尔→次难分离→最难最后。</span>
+          <span class="kp-img" onclick="alert('见图片 ch05-五组分分离序列图')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">同步考虑热集成：匹配不同温位精馏塔的冷凝器和再沸器。与多效精馏的区别。调节压力是实现塔间热集成的主要手段。</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 第六章 其它分离技术 -->
+<!-- ============================================================ -->
+<div class="chapter-card ch6" id="ch6">
+  <div class="chapter-header" onclick="toggleChapter(this)">
+    <div class="ch-header-left">
+      <span class="ch-icon">🧪</span>
+      <span class="ch-title">第六章 其它分离技术</span>
+      <span class="ch-tag">Other Separation Technologies</span>
+    </div>
+    <span class="ch-toggle">▾</span>
+  </div>
+  <div class="chapter-body">
+
+    <!-- 吸附 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第一节 吸附分离</span>
+        <span class="kp-badge important">⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">吸附分离：分离剂为固体吸附剂，基于不同物质对吸附剂亲和性差异。分离过程包括：吸附+脱附两个过程。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">物理吸附（范德华力，可逆，多分子层，吸附热~20kJ/mol）vs 化学吸附（化学键力，不可逆，单分子层，吸附热80-420kJ/mol）。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">常用吸附剂：有机（活性炭、大孔树脂等）；无机（硅胶、活性氧化铝、分子筛等）。吸附剂特性参数：比表面积、孔径分布、吸附容量等。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge core">核心</span>
+          <span class="kp-text"><strong>Langmuir吸附等温方程</strong>：<span class="kp-formula">q = q_m · Kp / (1 + Kp)</span></span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text"><strong>变温吸附（TSA）</strong>：不同温度下吸附量不同，低温吸附+高温脱附。<strong>变压吸附（PSA）</strong>：不同压力下吸附量不同，高压吸附+低压脱附。</span>
+          <span class="kp-img" onclick="alert('见图片 ch06-TSA与PSA原理图')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">固定床吸附：三个区域（饱和区、吸附区、未用区）。透过曲线：破点时间t_b，床层饱和时间t_e。</span>
+          <span class="kp-img" onclick="alert('见图片 ch06-固定床吸附波和透过曲线')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge basic">了解</span>
+          <span class="kp-text">模拟移动床（SMB）：通过切换进出料位置模拟固体吸附剂移动，实现连续操作。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 萃取 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第二节 萃取分离</span>
+        <span class="kp-badge important">⭐⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">液液萃取：分离均相液体混合物（物料分离剂）。工业原则：能用精馏时不用萃取。萃取用于：沸点相近、形成共沸物、热敏性物质。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge important">重点</span>
+          <span class="kp-text">液液相平衡条件：<span class="kp-formula">f_i^E = f_i^R</span> → <span class="kp-formula">x_i^E γ_i^E = x_i^R γ_i^R</span>，分配系数 <span class="kp-formula">K_i = γ_i^R / γ_i^E</span></span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge basic">了解</span>
+          <span class="kp-text">萃取设备：喷淋塔、填料塔、转盘塔、振动筛板塔等。分散相和连续相选择。轴向混合对萃取操作的影响。</span>
+          <span class="kp-img" onclick="alert('见图片 ch06-萃取塔结构及流程')">📄见PPT</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge basic">了解</span>
+          <span class="kp-text"><strong>超临界流体萃取</strong>：最常用CO₂（临界温度31℃，临界压力7.38MPa）。特点：兼具气液两性。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分子蒸馏 -->
+    <div class="section-block">
+      <div class="section-title" onclick="toggleSection(this)">
+        <span class="section-toggle">▾</span>
+        <span>第三节 分子蒸馏</span>
+        <span class="kp-badge basic">⭐</span>
+      </div>
+      <div class="section-content">
+        <div class="knowledge-point">
+          <span class="kp-badge basic">了解</span>
+          <span class="kp-text">分子蒸馏：基于速率的分离技术（不同于平衡级）。在高真空下利用分子运动平均自由程差异实现分离。适用于热敏性、高沸点物质。</span>
+        </div>
+        <div class="knowledge-point">
+          <span class="kp-badge basic">了解</span>
+          <span class="kp-text">与超临界萃取的不同：超临界萃取利用溶剂在超临界状态的特殊溶解能力，分子蒸馏利用分子运动自由程差异。</span>
+          <span class="kp-img" onclick="alert('见图片 ch06-分子蒸馏原理示意图')">📄见PPT</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 底部 -->
+<!-- ============================================================ -->
+<div class="keyboard-hint">
+  ⌨️ 键盘导航：<kbd>↑</kbd><kbd>↓</kbd> 滚轮浏览 · 点击标题可切换收起/展开各章节和知识点
+</div>
+
+</div></div></div><!-- end mindmap-area, container -->
+
+<!-- ===== 搜索脚本 ===== -->
+<script>
+/* ===== 搜索功能 ===== */
+function doSearch() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const countEl = document.getElementById('searchCount');
+  // 清除所有高亮
+  document.querySelectorAll('.highlight-active').forEach(el => {
+    el.classList.remove('highlight-active');
+  });
+  if (!q) { countEl.textContent = ''; return; }
+
+  let count = 0;
+  const walker = document.createTreeWalker(
+    document.querySelector('.chapter-grid'),
+    NodeFilter.SHOW_TEXT,
+    null,
+    false
+  );
+  const matches = [];
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    if (node.textContent.toLowerCase().includes(q)) {
+      let parent = node.parentElement;
+      while (parent && !parent.classList.contains('knowledge-point') && !parent.classList.contains('section-title') && parent !== document.body) {
+        parent = parent.parentElement;
+      }
+      if (parent && !matches.includes(parent)) {
+        matches.push(parent);
+      }
+    }
+  }
+
+  // 展开所有上层
+  matches.forEach(el => {
+    // 展开所有折叠的祖先
+    let cur = el;
+    while (cur) {
+      if (cur.classList.contains('section-block') && cur.classList.contains('collapsed')) {
+        cur.classList.remove('collapsed');
+      }
+      if (cur.classList.contains('chapter-card') && cur.classList.contains('collapsed')) {
+        cur.classList.remove('collapsed');
+      }
+      cur = cur.parentElement;
+    }
+    // 高亮
+    el.classList.add('highlight-active');
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    count++;
+  });
+
+  countEl.textContent = count + ' 个结果';
+  if (count > 0) {
+    setTimeout(() => {
+      matches[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 200);
+  }
+}
+
+document.getElementById('searchInput').addEventListener('keyup', function(e) {
+  if (e.key === 'Enter') doSearch();
+});
+
+/* ===== 收展控制 ===== */
+function toggleChapter(header) {
+  const card = header.closest('.chapter-card');
+  card.classList.toggle('collapsed');
+}
+
+function toggleSection(title) {
+  const block = title.closest('.section-block');
+  block.classList.toggle('collapsed');
+}
+
+function toggleAll() {
+  const allCards = document.querySelectorAll('.chapter-card');
+  const allCollapsed = Array.from(allCards).every(c => c.classList.contains('collapsed'));
+  allCards.forEach(c => {
+    if (allCollapsed) c.classList.remove('collapsed');
+    else c.classList.add('collapsed');
+  });
+  // Also toggle sections
+  const allSections = document.querySelectorAll('.section-block');
+  allSections.forEach(s => {
+    if (allCollapsed) s.classList.remove('collapsed');
+    else s.classList.add('collapsed');
+  });
+}
+
+/* ===== 键盘导航 ===== */
+document.addEventListener('keydown', function(e) {
+  // Ctrl+F search
+  if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+    e.preventDefault();
+    document.getElementById('searchInput').focus();
+  }
+  // Escape search
+  if (e.key === 'Escape') {
+    document.getElementById('searchInput').blur();
+    document.getElementById('searchCount').textContent = '';
+    document.querySelectorAll('.highlight-active').forEach(el => el.classList.remove('highlight-active'));
+  }
+});
+
+/* ===== 自动展开全部 ===== */
+document.addEventListener('DOMContentLoaded', function() {
+  // Start with all expanded
+});
+</script>
+
+</body>
+</html>
