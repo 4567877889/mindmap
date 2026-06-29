@@ -110,24 +110,74 @@ body {
 .search-btn:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
 .search-count {
   display: none; align-items: center; gap: 6px;
-  font-size: 12px; color: var(--text); white-space: nowrap;
+  font-size: 12px; color: var(--text2); white-space: nowrap;
 }
 .search-count.visible { display: flex; }
-.search-nav-btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 26px; height: 26px; border-radius: 50%;
-  border: 1px solid var(--border); background: var(--bg3);
-  color: var(--text); cursor: pointer; font-size: 13px;
-  transition: all .2s; user-select: none;
-}
-.search-nav-btn:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); background: rgba(88,166,255,0.1); }
-.search-nav-btn:active { transform: scale(0.92); }
-#searchNavText { min-width: 48px; text-align: center; font-variant-numeric: tabular-nums; }
 .search-clear {
-  cursor: pointer; color: var(--text2); font-size: 14px; padding: 2px 4px;
+  cursor: pointer; color: var(--text2); font-size: 13px; padding: 2px 4px;
   border-radius: 4px; transition: all .2s;
 }
 .search-clear:hover { color: var(--accent-red); background: rgba(248,81,73,0.1); }
+
+/* ===== 搜索下拉面板 ===== */
+.search-dropdown {
+  position: absolute; top: 34px; right: 0;
+  width: 380px; max-height: 360px;
+  overflow-y: auto;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  z-index: 999;
+  display: none;
+  padding: 4px 0;
+}
+.search-dropdown.open { display: block; }
+.search-dropdown::-webkit-scrollbar { width: 5px; }
+.search-dropdown::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.search-result-item {
+  display: block; width: 100%; padding: 8px 14px;
+  cursor: pointer; text-align: left; border: none;
+  background: transparent; color: var(--text);
+  font-size: 12.5px; line-height: 1.5;
+  transition: background .15s;
+  border-left: 3px solid transparent;
+}
+.search-result-item:hover,
+.search-result-item.keyboard-active {
+  background: rgba(88,166,255,0.08);
+  border-left-color: var(--accent-cyan);
+}
+.search-result-item .sr-badge {
+  display: inline-block; font-size: 10px; padding: 1px 7px;
+  border-radius: 8px; font-weight: 700; margin-right: 6px;
+  flex-shrink: 0;
+}
+.search-result-item .sr-badge.core { background: var(--accent-red); color: #fff; }
+.search-result-item .sr-badge.important { background: var(--accent-orange); color: #fff; }
+.search-result-item .sr-badge.basic { background: rgba(88,166,255,0.2); color: var(--accent-cyan); }
+.search-result-item .sr-badge.diff { background: rgba(163,113,247,0.2); color: var(--accent-purple); }
+.search-result-item .sr-text { display: block; margin-top: 2px; color: var(--text2); }
+.search-result-item .sr-text em {
+  font-style: normal; color: var(--accent-yellow); font-weight: 600;
+  background: rgba(210,153,34,0.15); padding: 0 2px; border-radius: 2px;
+}
+.search-result-item .sr-chapter {
+  display: block; font-size: 10px; color: var(--text2); margin-top: 3px; opacity: 0.7;
+}
+
+.search-dropdown-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 14px 4px;
+  font-size: 11px; color: var(--text2);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+.search-dropdown-empty {
+  padding: 20px 14px; text-align: center;
+  font-size: 13px; color: var(--text2);
+}
 
 /* ===== 主容器 ===== */
 .container { padding-top: 56px; position: relative; }
@@ -432,15 +482,11 @@ body {
   <a class="nav-btn ch4" href="#ch4">第四章</a>
   <a class="nav-btn ch5" href="#ch5">第五章</a>
   <a class="nav-btn ch6" href="#ch6">第六章</a>
-  <div class="search-bar">
+  <div class="search-bar" style="position:relative">
     <input type="text" id="searchInput" placeholder="搜索知识点…" autocomplete="off" />
     <button class="search-btn" onclick="doSearch()">🔍</button>
-    <span class="search-count" id="searchCount">
-      <span class="search-nav-btn" onclick="prevMatch(); event.stopPropagation()" title="上一个 (Shift+Enter)">◀</span>
-      <span id="searchNavText">0 / 0</span>
-      <span class="search-nav-btn" onclick="nextMatch(); event.stopPropagation()" title="下一个 (Enter)">▶</span>
-      <span class="search-clear" onclick="clearSearch(); event.stopPropagation()" title="清除 (Esc)">✕</span>
-    </span>
+    <span class="search-count" id="searchCount"></span>
+    <div class="search-dropdown" id="searchDropdown"></div>
   </div>
 </nav>
 
@@ -1453,7 +1499,7 @@ body {
 <!-- 底部 -->
 <!-- ============================================================ -->
 <div class="keyboard-hint">
-  ⌨️ 搜索：<kbd>Ctrl+F</kbd> 聚焦搜索框 · <kbd>Enter</kbd> 下一个匹配 · <kbd>Shift+Enter</kbd> 上一个匹配 · <kbd>Esc</kbd> 清除
+  ⌨️ 搜索：<kbd>Ctrl+F</kbd> 聚焦 · 输入即搜 · <kbd>↑↓</kbd> 选结果 · <kbd>Enter</kbd> 跳转 · <kbd>Esc</kbd> 关闭
 </div>
 
 </div></div></div><!-- end mindmap-area, container -->
@@ -1462,16 +1508,40 @@ body {
 <script>
 /* ===== 搜索状态 ===== */
 let searchMatches = [];
-let currentMatchIdx = -1;
+let dropdownActiveIdx = -1;
 
+/* ===== 工具函数 ===== */
+function getChapterName(el) {
+  while (el) {
+    const hdr = el.querySelector('.chapter-header');
+    if (hdr) {
+      const title = hdr.querySelector('.ch-title');
+      return title ? title.textContent.trim() : '';
+    }
+    el = el.parentElement;
+  }
+  return '';
+}
+
+function getBadgeInfo(el) {
+  const badge = el.querySelector('.kp-badge');
+  if (!badge) return { cls: '', text: '' };
+  return {
+    cls: badge.classList.contains('core') ? 'core' : badge.classList.contains('important') ? 'important' : badge.classList.contains('diff') ? 'diff' : 'basic',
+    text: badge.textContent.trim()
+  };
+}
+
+/* ===== 清除搜索 ===== */
 function clearSearch() {
   document.getElementById('searchInput').value = '';
   document.getElementById('searchInput').focus();
   clearHighlights();
+  closeDropdown();
   document.getElementById('searchCount').classList.remove('visible');
-  document.getElementById('searchNavText').textContent = '0 / 0';
+  document.getElementById('searchCount').textContent = '';
   searchMatches = [];
-  currentMatchIdx = -1;
+  dropdownActiveIdx = -1;
 }
 
 function clearHighlights() {
@@ -1480,21 +1550,32 @@ function clearHighlights() {
   });
 }
 
-/* ===== 搜索功能 ===== */
+/* ===== 下拉面板 ===== */
+function closeDropdown() {
+  document.getElementById('searchDropdown').classList.remove('open');
+  dropdownActiveIdx = -1;
+}
+
+function showDropdown(html) {
+  const dd = document.getElementById('searchDropdown');
+  dd.innerHTML = html;
+  dd.classList.add('open');
+  dropdownActiveIdx = -1;
+}
+
+/* ===== 主搜索函数 ===== */
 function doSearch() {
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
   if (!q) { clearSearch(); return; }
 
   clearHighlights();
   searchMatches = [];
-  currentMatchIdx = -1;
+  dropdownActiveIdx = -1;
 
-  // Walk all text nodes to find matches
+  // Walk all text nodes
   const walker = document.createTreeWalker(
     document.querySelector('.chapter-grid'),
-    NodeFilter.SHOW_TEXT,
-    null,
-    false
+    NodeFilter.SHOW_TEXT, null, false
   );
   const seen = new Set();
   while (walker.nextNode()) {
@@ -1511,84 +1592,134 @@ function doSearch() {
     }
   }
 
+  // Build dropdown HTML
+  const countEl = document.getElementById('searchCount');
   if (searchMatches.length === 0) {
-    document.getElementById('searchCount').classList.add('visible');
-    document.getElementById('searchNavText').textContent = '无结果';
+    countEl.classList.add('visible');
+    countEl.textContent = '无结果';
+    showDropdown('<div class="search-dropdown-empty">😕 没有找到匹配的知识点</div>');
     return;
   }
 
-  // Expand all ancestors of matches
+  countEl.classList.add('visible');
+  countEl.textContent = searchMatches.length + ' 个结果';
+  if (searchMatches.length > 1) {
+    const clearBtn = document.createElement('span');
+    clearBtn.className = 'search-clear';
+    clearBtn.textContent = '✕';
+    clearBtn.onclick = clearSearch;
+    clearBtn.title = '清除搜索 (Esc)';
+    countEl.appendChild(clearBtn);
+  }
+
+  // Build result items
+  let html = '<div class="search-dropdown-header">📋 搜索结果 <span style="font-size:10px">共 ' + searchMatches.length + ' 项，点击跳转</span></div>';
+  searchMatches.forEach((el, i) => {
+    const badge = getBadgeInfo(el);
+    const chapter = getChapterName(el);
+    let text = el.querySelector('.kp-text');
+    text = text ? text.textContent.trim() : el.textContent.trim();
+    text = text.replace(/\s+/g, ' ').substring(0, 80);
+    if (el.querySelector('.kp-text') && el.querySelector('.kp-text').textContent.trim().length > 80) text += '…';
+
+    // Highlight search term in snippet
+    const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    text = text.replace(new RegExp('(' + escapedQ + ')', 'gi'), '<em>$1</em>');
+
+    html += '<div class="search-result-item" data-idx="' + i + '" onmousedown="selectMatch(' + i + ')" ontouchstart="">' +
+      (badge.text ? '<span class="sr-badge ' + badge.cls + '">' + badge.text + '</span>' : '') +
+      '<span class="sr-text">' + text + '</span>' +
+      '<span class="sr-chapter">' + chapter + '</span>' +
+      '</div>';
+  });
+
+  showDropdown(html);
+
+  // Expand ancestors + highlight matches on page
   searchMatches.forEach(el => {
     let cur = el;
     while (cur) {
-      if (cur.classList.contains('section-block') && cur.classList.contains('collapsed')) {
+      if (cur.classList.contains('section-block') && cur.classList.contains('collapsed'))
         cur.classList.remove('collapsed');
-      }
-      if (cur.classList.contains('chapter-card') && cur.classList.contains('collapsed')) {
+      if (cur.classList.contains('chapter-card') && cur.classList.contains('collapsed'))
         cur.classList.remove('collapsed');
-      }
       cur = cur.parentElement;
     }
     el.classList.add('highlight-match');
   });
-
-  // Go to first match
-  document.getElementById('searchCount').classList.add('visible');
-  gotoMatch(0);
 }
 
-function gotoMatch(idx) {
-  if (searchMatches.length === 0) return;
-  if (idx < 0) idx = searchMatches.length - 1;
-  if (idx >= searchMatches.length) idx = 0;
-
-  // Clear previous current
-  if (currentMatchIdx >= 0 && currentMatchIdx < searchMatches.length) {
-    searchMatches[currentMatchIdx].classList.remove('highlight-current');
-    searchMatches[currentMatchIdx].classList.add('highlight-match');
-  }
-
-  currentMatchIdx = idx;
-  searchMatches[idx].classList.remove('highlight-match');
+/* ===== 选中某个结果 ===== */
+function selectMatch(idx) {
+  if (idx < 0 || idx >= searchMatches.length) return;
+  // Highlight
+  document.querySelectorAll('.highlight-current').forEach(el => el.classList.remove('highlight-current'));
   searchMatches[idx].classList.add('highlight-current');
-
-  document.getElementById('searchNavText').textContent =
-    (currentMatchIdx + 1) + ' / ' + searchMatches.length;
-
+  searchMatches[idx].classList.remove('highlight-match');
   searchMatches[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  closeDropdown();
+  document.getElementById('searchInput').blur();
 }
 
-function nextMatch() {
-  if (searchMatches.length === 0) return;
-  gotoMatch(currentMatchIdx + 1);
-}
-
-function prevMatch() {
-  if (searchMatches.length === 0) return;
-  gotoMatch(currentMatchIdx - 1);
-}
-
-/* ===== 搜索框键盘事件 ===== */
+/* ===== 键盘事件 ===== */
 document.getElementById('searchInput').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
+  const dd = document.getElementById('searchDropdown');
+  const items = dd.querySelectorAll('.search-result-item');
+
+  if (e.key === 'Enter') {
     e.preventDefault();
-    if (searchMatches.length === 0) {
-      doSearch();
+    if (dropdownActiveIdx >= 0) {
+      selectMatch(dropdownActiveIdx);
     } else {
-      nextMatch();
+      doSearch();
     }
-  } else if (e.key === 'Enter' && e.shiftKey) {
+  } else if (e.key === 'ArrowDown') {
     e.preventDefault();
-    prevMatch();
+    if (items.length > 0) {
+      if (!dd.classList.contains('open')) doSearch();
+      dropdownActiveIdx = Math.min(dropdownActiveIdx + 1, items.length - 1);
+      items.forEach(item => item.classList.remove('keyboard-active'));
+      if (dropdownActiveIdx >= 0) items[dropdownActiveIdx].classList.add('keyboard-active');
+      if (dropdownActiveIdx >= 0) items[dropdownActiveIdx].scrollIntoView({ block: 'nearest' });
+    }
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (items.length > 0) {
+      dropdownActiveIdx = Math.max(dropdownActiveIdx - 1, 0);
+      items.forEach(item => item.classList.remove('keyboard-active'));
+      if (dropdownActiveIdx >= 0) items[dropdownActiveIdx].classList.add('keyboard-active');
+      if (dropdownActiveIdx >= 0) items[dropdownActiveIdx].scrollIntoView({ block: 'nearest' });
+    }
   } else if (e.key === 'Escape') {
     e.preventDefault();
     clearSearch();
   }
 });
 
-/* ===== 全局键盘事件 ===== */
+// Live search on typing (debounced)
+let searchTimeout;
+document.getElementById('searchInput').addEventListener('input', function() {
+  clearTimeout(searchTimeout);
+  const q = this.value.trim();
+  if (!q) { clearSearch(); return; }
+  searchTimeout = setTimeout(() => doSearch(), 200);
+});
+
+// Close dropdown on click outside
+document.addEventListener('click', function(e) {
+  const bar = document.querySelector('.search-bar');
+  if (bar && !bar.contains(e.target)) {
+    closeDropdown();
+  }
+});
+
+// Prevent dropdown close when clicking inside it
+document.getElementById('searchDropdown').addEventListener('mousedown', function(e) {
+  e.preventDefault();
+});
+
+/* ===== 全局键盘 ===== */
 document.addEventListener('keydown', function(e) {
-  // Ctrl+F / Cmd+F — focus search
   if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
     e.preventDefault();
     document.getElementById('searchInput').focus();
@@ -1601,24 +1732,16 @@ function toggleChapter(header) {
   const card = header.closest('.chapter-card');
   card.classList.toggle('collapsed');
 }
-
 function toggleSection(title) {
   const block = title.closest('.section-block');
   block.classList.toggle('collapsed');
 }
-
 function toggleAll() {
   const allCards = document.querySelectorAll('.chapter-card');
   const allCollapsed = Array.from(allCards).every(c => c.classList.contains('collapsed'));
-  allCards.forEach(c => {
-    if (allCollapsed) c.classList.remove('collapsed');
-    else c.classList.add('collapsed');
-  });
+  allCards.forEach(c => { if (allCollapsed) c.classList.remove('collapsed'); else c.classList.add('collapsed'); });
   const allSections = document.querySelectorAll('.section-block');
-  allSections.forEach(s => {
-    if (allCollapsed) s.classList.remove('collapsed');
-    else s.classList.add('collapsed');
-  });
+  allSections.forEach(s => { if (allCollapsed) s.classList.remove('collapsed'); else s.classList.add('collapsed'); });
 }
 </script>
 
