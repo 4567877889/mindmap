@@ -1626,7 +1626,7 @@ function doSearch() {
     const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     text = text.replace(new RegExp('(' + escapedQ + ')', 'gi'), '<em>$1</em>');
 
-    html += '<div class="search-result-item" data-idx="' + i + '" onmousedown="selectMatch(' + i + ')" ontouchstart="">' +
+    html += '<div class="search-result-item" data-idx="' + i + '" onclick="selectMatch(' + i + ')">' +
       (badge.text ? '<span class="sr-badge ' + badge.cls + '">' + badge.text + '</span>' : '') +
       '<span class="sr-text">' + text + '</span>' +
       '<span class="sr-chapter">' + chapter + '</span>' +
@@ -1711,11 +1711,6 @@ document.addEventListener('click', function(e) {
   if (bar && !bar.contains(e.target)) {
     closeDropdown();
   }
-});
-
-// Prevent dropdown close when clicking inside it
-document.getElementById('searchDropdown').addEventListener('mousedown', function(e) {
-  e.preventDefault();
 });
 
 /* ===== 全局键盘 ===== */
